@@ -2,7 +2,7 @@
 ///
 /// 提供与Discord RPC的连接和状态更新功能
 use discord_rpc_client::Client as DiscordClient;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{ SystemTime, UNIX_EPOCH };
 
 use crate::config::Config;
 use crate::parser::WindowInfo;
@@ -47,19 +47,18 @@ impl DiscordManager {
     pub fn update_activity(
         &mut self,
         window_info: &WindowInfo,
-        full_title: &str,
+        full_title: &str
     ) -> Result<(), String> {
         self.client
             .set_activity(|act| {
                 let mut activity = act
                     .state(full_title)
-                    .details(format!("使用: {}", window_info.app_name))
+                    .details(&window_info.app_name)
                     .timestamps(|t| t.start(self.start_time));
 
                 // 添加Windows图标（需要在Discord Developer Portal上传）
                 activity = activity.assets(|a| {
-                    a.large_image("windows")
-                        .large_text("Windows Activity Monitor")
+                    a.large_image("windows").large_text("Windows Activity Monitor")
                 });
 
                 activity
