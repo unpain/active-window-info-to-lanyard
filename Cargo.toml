@@ -3,19 +3,19 @@ name = "active-window-info-to-lanyard"
 version = "0.1.0"
 edition = "2024"
 authors = ["1733636949a@gmail.com"]
-description = "Windows活动窗口监控工具，可将当前窗口信息同步到Discord Rich Presence"
+description = "跨平台活动窗口监控工具，可将当前窗口信息同步到Discord Rich Presence (支持 Windows 和 macOS)"
 license = "MIT"
 repository = "https://github.com/unpain/active-window-info"
-keywords = ["discord", "windows", "activity", "rpc", "monitoring"]
+keywords = ["discord", "windows", "macos", "activity", "rpc"]
 categories = ["os", "gui"]
 readme = "README.md"
 
 [lib]
-name = "cur_win_discord_rust"
+name = "active_window_info_to_lanyard_lib"
 path = "src/lib.rs"
 
 [[bin]]
-name = "cur-win-discord-rust"
+name = "main"
 path = "src/main.rs"
 
 [dependencies]
@@ -32,3 +32,8 @@ windows = { version = "0.52", features = [
     "Win32_UI_WindowsAndMessaging",
     "Win32_System_Threading",
 ] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+cocoa = "0.25"
+core-foundation = "0.9"
+core-graphics = "0.23"

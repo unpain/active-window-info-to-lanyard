@@ -1,7 +1,8 @@
-use cur_win_discord_rust::{ Config, DiscordManager, WindowInfo, WindowMonitor };
-/// Windows Discord Activity Monitor - 主入口
+use active_window_info_to_lanyard_lib::{ Config, DiscordManager, WindowInfo, WindowMonitor };
+/// 跨平台 Discord Activity Monitor - 主入口
 ///
-/// 监控Windows活动窗口并将其同步到Discord Rich Presence
+/// 监控活动窗口并将其同步到Discord Rich Presence
+/// 支持 Windows 和 macOS 平台
 use std::{ fs::File, io::Read, thread };
 
 // 更新间隔（秒）
@@ -70,11 +71,12 @@ fn main() {
 /// 打印欢迎信息
 fn print_welcome(discord_arr_id: &str) {
     println!("╔════════════════════════════════════════════════╗");
-    println!("║  Windows Discord Activity Monitor            ║");
-    println!("║  Windows活动窗口监控 → Discord Rich Presence  ║");
+    println!("║  Discord Activity Monitor                     ║");
+    println!("║  活动窗口监控 → Discord Rich Presence         ║");
+    println!("║  支持: Windows & macOS                        ║");
     println!("╚════════════════════════════════════════════════╝");
     println!();
-    println!("📝 版本: {}", cur_win_discord_rust::VERSION);
+    println!("📝 版本: {}", active_window_info_to_lanyard_lib::VERSION);
     println!("⏱️  更新间隔: {} 秒", UPDATE_INTERVAL);
     println!("🔧 Discord应用ID: {}", discord_arr_id);
     println!();
