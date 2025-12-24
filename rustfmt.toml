@@ -1,0 +1,36 @@
+# rustfmt配置
+# 使用默认的Rust 2021 edition格式化规则
+
+edition = "2021"
+
+# 每行最大字符数
+max_width = 100
+
+# 硬标签宽度
+tab_spaces = 4
+
+# 注释最大宽度
+comment_width = 80
+
+# 保留垂直空白行
+blank_lines_upper_bound = 2
+
+# 使用字段初始化缩写
+use_field_init_shorthand = true
+
+# 在尾随逗号后换行
+trailing_comma = "Vertical"
+
+# 匹配块尾随逗号
+match_block_trailing_comma = true
+
+# 控制流缩进
+control_brace_style = "AlwaysSameLine"
+
+# 导入分组
+imports_granularity = "Module"
+group_imports = "StdExternalCrate"
+
+# 格式化字符串
+format_strings = true
+

@@ -1,0 +1,18 @@
+# Windows Activity Monitor - Configuration File
+# 使用此配置文件需要将 src/main_advanced.rs 重命名为 src/main.rs
+
+# Discord Application ID (必填)
+# 在 https://discord.com/developers/applications 获取
+DISCORD_APP_ID=YOUR_DISCORD_APP_ID
+
+# 更新间隔（秒）
+UPDATE_INTERVAL=5
+
+# 是否显示详细信息（窗口标题）
+SHOW_DETAILS=true
+
+# 是否显示时间戳
+SHOW_TIMESTAMPS=true
+
+# 是否显示应用图标
+SHOW_ICONS=true

@@ -1,0 +1,37 @@
+# .gitignore 更新说明
+
+# Rust 相关
+/target/
+Cargo.lock
+
+# 编辑器和IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.env
+*~
+.DS_Store
+
+# 配置文件
+config.txt
+*.local
+
+# 日志文件
+*.log
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# 构建输出
+*.exe
+*.pdb
+
+# 文档生成
+/target/doc/
+
+# 测试覆盖率
+tarpaulin-report.html
+cobertura.xml
