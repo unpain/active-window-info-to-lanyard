@@ -1,20 +1,21 @@
-# 🎮 Windows Discord Activity Monitor
+# 🎮 Discord Activity Monitor
 
 [![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](.)
 
-一个用Rust编写的轻量级Windows工具，可将你当前活动的窗口信息实时同步到Discord Rich Presence，让你的朋友看到你正在使用什么应用程序。
+一个用Rust编写的跨平台轻量级工具，可将你当前活动的窗口信息实时同步到Discord Rich Presence，让你的朋友看到你正在使用什么应用程序。支持 Windows 和 macOS。
 
 ## ✨ 特性
 
-- 🪟 **实时窗口监控** - 自动检测Windows活动窗口变化
+- 🪟 **实时窗口监控** - 自动检测活动窗口变化
 - 🎯 **智能解析** - 从窗口标题中智能提取应用名称和详细信息
 - 💬 **Discord集成** - 无缝集成Discord Rich Presence
 - ⚡ **高性能** - 仅在窗口变化时更新，节省系统资源
 - 🔧 **模块化设计** - 清晰的代码架构，易于扩展和维护
 - 📦 **开箱即用** - 简单配置即可开始使用
 - 🧪 **测试覆盖** - 完整的单元测试和文档测试
+- 🌐 **跨平台支持** - 支持 Windows 和 macOS
 
 ## 📸 效果展示
 
@@ -30,7 +31,7 @@
 
 ### 前置要求
 
-- Windows 10/11
+- Windows 10/11 或 macOS 10.13+
 - Rust 1.70.0 或更高版本
 - Discord应用
 
@@ -261,9 +262,10 @@ Discord Rich Presence显示
 
 ## ⚠️ 注意事项
 
-- 仅支持Windows平台（使用Windows API）
+- 支持 Windows 和 macOS 平台
 - 需要Discord应用运行才能更新状态
 - 某些窗口可能无法正确获取标题（如管理员权限窗口）
+- macOS 首次运行需要授予辅助功能访问权限
 - Discord API有频率限制，建议更新间隔不小于3秒
 
 ## 🐛 故障排除
@@ -283,8 +285,8 @@ Discord Rich Presence显示
 
 ### 窗口标题无法获取
 
-- 某些以管理员权限运行的窗口无法被普通权限程序读取
-- 尝试以管理员权限运行本程序
+- Windows: 某些以管理员权限运行的窗口无法被普通权限程序读取，尝试以管理员权限运行本程序
+- macOS: 首次运行时需要在"系统设置 → 隐私与安全性 → 辅助功能"中授予权限
 
 ## 📄 许可证
 

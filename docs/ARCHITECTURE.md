@@ -2,7 +2,7 @@
 
 ## 概述
 
-Windows Discord Activity Monitor 是一个用Rust编写的轻量级工具，用于监控Windows活动窗口并将信息同步到Discord Rich Presence。
+Discord Activity Monitor 是一个用Rust编写的跨平台轻量级工具，用于监控活动窗口并将信息同步到Discord Rich Presence。支持 Windows 和 macOS 平台。
 
 ## 架构设计
 
@@ -46,9 +46,9 @@ src/
 
 **职责：**
 
-- 调用Windows API获取活动窗口信息
+- 调用系统API获取活动窗口信息
 - 跟踪窗口变化
-- 提供跨平台兼容性（仅Windows实现）
+- 提供跨平台实现（Windows 和 macOS）
 
 **主要类型：**
 
@@ -64,6 +64,11 @@ src/
 
 - `GetForegroundWindow()` - 获取前台窗口句柄
 - `GetWindowTextW()` - 获取窗口标题
+
+**macOS API调用：**
+
+- `NSWorkspace::frontmostApplication` - 获取活动应用
+- `CGWindowListCopyWindowInfo` - 获取窗口信息
 
 #### 3. parser.rs - 窗口标题解析模块
 
@@ -201,7 +206,7 @@ src/
 
 - 返回 `None` 表示无法获取窗口
 - 不抛出panic，保持程序稳定
-- 仅在Windows平台上实现
+- 支持 Windows 和 macOS 平台
 
 ## 性能考虑
 
@@ -240,7 +245,8 @@ src/
    - 支持忽略特定窗口
 
 4. **其他平台支持**
-   - 为 macOS/Linux 实现 `get_active_window_title()`
+   - 已支持 Windows 和 macOS
+   - 可为 Linux 实现 `get_active_window_title()`
    - 使用条件编译保持代码整洁
 
 ## 测试策略
@@ -267,7 +273,10 @@ src/
 ### 核心依赖
 
 - `discord-rpc-client` - Discord RPC客户端
-- `windows` - Windows API绑定
+- `windows` - Windows API绑定 (仅Windows)
+- `cocoa` - macOS Cocoa框架绑定 (仅macOS)
+- `core-foundation` - macOS Core Foundation框架 (仅macOS)
+- `core-graphics` - macOS Core Graphics框架 (仅macOS)
 
 ### 开发依赖
 
@@ -279,7 +288,7 @@ src/
 ### 构建配置
 
 - 支持库和可执行文件双模式
-- 条件编译Windows特定代码
+- 条件编译平台特定代码 (Windows/macOS)
 - 优化发布构建大小
 
 ### 文档生成
