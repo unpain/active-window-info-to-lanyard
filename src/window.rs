@@ -3,6 +3,9 @@
 //! 提供获取当前活动窗口标题的功能
 //! 支持 Windows 和 macOS 平台
 
+// 忽略 objc 宏的 clippy 警告
+#![allow(unexpected_cfgs)]
+
 #[cfg(windows)]
 use windows::{
     Win32::Foundation::HWND,
@@ -11,19 +14,18 @@ use windows::{
 
 #[cfg(target_os = "macos")]
 use cocoa::{
-    appkit::NSWorkspace,
-    base::{id, nil},
-    foundation::{NSAutoreleasePool, NSString},
+    base::nil,
+    foundation::NSAutoreleasePool,
 };
+#[cfg(target_os = "macos")]
+use objc::{msg_send, sel, sel_impl};
 #[cfg(target_os = "macos")]
 use core_foundation::{
     base::TCFType,
-    string::{CFString, CFStringRef},
+    string::CFStringRef,
 };
 #[cfg(target_os = "macos")]
-use core_graphics::window::{kCGWindowListOptionOnScreenOnly, kCGWindowLayer, kCGNullWindowID};
-#[cfg(target_os = "macos")]
-use std::ptr;
+use core_graphics::window::{kCGWindowListOptionOnScreenOnly, kCGNullWindowID};
 
 /// 获取当前活动窗口的标题 (Windows版本)
 ///
@@ -65,86 +67,90 @@ pub fn get_active_window_title() -> Option<String> {
 ///
 /// # 平台支持
 /// 仅支持macOS平台
+///
+/// # 实现说明
+/// 使用 Core Graphics API 直接获取窗口列表，返回第一个 layer=0 的窗口（活动窗口）
+/// 这种方法比使用 NSWorkspace 更可靠，能够实时检测窗口变化
 #[cfg(target_os = "macos")]
 pub fn get_active_window_title() -> Option<String> {
+    use core_graphics::window::CGWindowListCopyWindowInfo;
+    use core_foundation::{
+        array::CFArray,
+        dictionary::CFDictionary,
+        number::CFNumber,
+        string::CFString,
+    };
+    
     unsafe {
-        let _pool = NSAutoreleasePool::new(nil);
+        // 每次都重新创建 pool，确保获取最新状态
+        let pool = NSAutoreleasePool::new(nil);
         
-        // 获取当前活动的应用
-        let workspace: id = NSWorkspace::sharedWorkspace(nil);
-        let active_app: id = msg_send![workspace, frontmostApplication];
-        
-        if active_app == nil {
-            return None;
-        }
-        
-        // 获取应用名称
-        let app_name: id = msg_send![active_app, localizedName];
-        if app_name == nil {
-            return None;
-        }
-        
-        let app_name_str = nsstring_to_string(app_name);
-        
-        // 尝试获取窗口标题
-        // 使用 Core Graphics 获取活动窗口信息
-        use core_graphics::window::CGWindowListCopyWindowInfo;
-        
+        // 使用 Core Graphics API 直接获取窗口列表
+        // 这个方法比 NSWorkspace 更可靠
         let window_list = CGWindowListCopyWindowInfo(
             kCGWindowListOptionOnScreenOnly,
             kCGNullWindowID
         );
         
         if window_list.is_null() {
-            return Some(app_name_str);
+            let _: () = msg_send![pool, drain];
+            return None;
         }
         
         let window_list_ref = window_list as *const _ as *const std::ffi::c_void;
-        let cf_array = core_foundation::array::CFArray::<core_foundation::dictionary::CFDictionary<CFString, *const std::ffi::c_void>>::wrap_under_create_rule(
+        let cf_array = CFArray::<CFDictionary<CFString, *const std::ffi::c_void>>::wrap_under_create_rule(
             window_list_ref as core_foundation::array::CFArrayRef
         );
         
-        // 查找层级为0的窗口（活动窗口）
+        // 遍历所有窗口，找到第一个 layer=0 的窗口（这通常是活动窗口）
         for i in 0..cf_array.len() {
             let window_info = cf_array.get(i).unwrap();
             
-            // 获取窗口层级
-            if let Some(layer) = window_info.find(CFString::new("kCGWindowLayer").as_concrete_TypeRef()) {
-                use core_foundation::number::CFNumber;
-                let layer_num = CFNumber::wrap_under_get_rule(*layer as core_foundation::number::CFNumberRef);
-                if let Some(layer_val) = layer_num.to_i32() {
-                    if layer_val == 0 {
-                        // 获取窗口标题
-                        if let Some(title_ptr) = window_info.find(CFString::new("kCGWindowName").as_concrete_TypeRef()) {
-                            let title_cf = CFString::wrap_under_get_rule(*title_ptr as CFStringRef);
-                            let title = title_cf.to_string();
-                            if !title.is_empty() {
-                                return Some(format!("{} - {}", title, app_name_str));
-                            }
-                        }
-                        
-                        // 如果没有窗口标题，只返回应用名
-                        return Some(app_name_str);
-                    }
-                }
+            // 检查窗口层级
+            let layer = if let Some(layer_ptr) = window_info.find(CFString::new("kCGWindowLayer").as_concrete_TypeRef()) {
+                let layer_num = CFNumber::wrap_under_get_rule(*layer_ptr as core_foundation::number::CFNumberRef);
+                layer_num.to_i32().unwrap_or(-1)
+            } else {
+                -1
+            };
+            
+            // 只处理 layer=0 的窗口（普通窗口）
+            if layer != 0 {
+                continue;
+            }
+            
+            // 获取窗口所属的应用名称
+            let app_name = if let Some(owner_ptr) = window_info.find(CFString::new("kCGWindowOwnerName").as_concrete_TypeRef()) {
+                let owner_cf = CFString::wrap_under_get_rule(*owner_ptr as CFStringRef);
+                owner_cf.to_string()
+            } else {
+                String::new()
+            };
+            
+            if app_name.is_empty() {
+                continue;
+            }
+            
+            // 获取窗口标题
+            let window_title = if let Some(title_ptr) = window_info.find(CFString::new("kCGWindowName").as_concrete_TypeRef()) {
+                let title_cf = CFString::wrap_under_get_rule(*title_ptr as CFStringRef);
+                title_cf.to_string()
+            } else {
+                String::new()
+            };
+            
+            let _: () = msg_send![pool, drain];
+            
+            // 返回第一个找到的 layer=0 窗口
+            if !window_title.is_empty() {
+                return Some(format!("{} - {}", window_title, app_name));
+            } else {
+                return Some(app_name);
             }
         }
         
-        // 如果没找到合适的窗口，返回应用名
-        Some(app_name_str)
-    }
-}
-
-#[cfg(target_os = "macos")]
-unsafe fn nsstring_to_string(nsstring: id) -> String {
-    use cocoa::foundation::NSString as NSStringTrait;
-    let cstr = NSStringTrait::UTF8String(nsstring);
-    if cstr.is_null() {
-        String::new()
-    } else {
-        std::ffi::CStr::from_ptr(cstr)
-            .to_string_lossy()
-            .into_owned()
+        let _: () = msg_send![pool, drain];
+        None
     }
 }
 

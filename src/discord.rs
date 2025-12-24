@@ -12,6 +12,7 @@ use crate::parser::WindowInfo;
 pub struct DiscordManager {
     client: DiscordClient,
     start_time: u64,
+    current_activity_start: u64,
     crypto: Option<CryptoManager>,
 }
 
@@ -47,6 +48,7 @@ impl DiscordManager {
         Ok(Self {
             client,
             start_time,
+            current_activity_start: start_time,
             crypto,
         })
     }
@@ -65,6 +67,12 @@ impl DiscordManager {
         window_info: &WindowInfo,
         full_title: &str
     ) -> Result<(), String> {
+        // 更新当前活动的开始时间为当前时间
+        self.current_activity_start = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_err(|e| format!("获取系统时间失败: {}", e))?
+            .as_secs();
+        
         // 如果启用了加密，加密state数据
         let state_data = if let Some(ref crypto) = self.crypto {
             crypto
@@ -79,7 +87,7 @@ impl DiscordManager {
                 let mut activity = act
                     .state(&state_data)
                     .details(&window_info.app_name)
-                    .timestamps(|t| t.start(self.start_time));
+                    .timestamps(|t| t.start(self.current_activity_start));
 
                 // 添加Windows图标（需要在Discord Developer Portal上传）
                 activity = activity.assets(|a| {
@@ -103,6 +111,11 @@ impl DiscordManager {
     /// 获取启动时间戳
     pub fn start_time(&self) -> u64 {
         self.start_time
+    }
+    
+    /// 获取当前活动的开始时间戳
+    pub fn current_activity_start(&self) -> u64 {
+        self.current_activity_start
     }
 
     /// 检查是否启用了加密
