@@ -33,6 +33,7 @@ impl Default for ExportConfig {
             scan_dirs: vec![
                 "/Applications".to_string(),
                 "/System/Applications".to_string(),
+                "/System/Library/CoreServices".to_string(),  // 包含 Finder 等系统核心应用
             ],
             parallel: true,
         }

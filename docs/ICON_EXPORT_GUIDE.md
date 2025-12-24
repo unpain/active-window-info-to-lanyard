@@ -16,6 +16,7 @@ cargo run --example export_icons
 
 这将：
 - 扫描 `/Applications` 和 `/System/Applications` 目录
+- 扫描 `/System/Library/CoreServices` 目录（包含 Finder、Dock、Siri 等系统核心应用）
 - 将图标导出为 512x512 像素的 PNG 格式
 - 保存到 `./exported_icons/` 目录
 

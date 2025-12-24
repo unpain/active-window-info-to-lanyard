@@ -17,6 +17,7 @@ cargo run --example export_icons
 **功能：**
 
 - 自动扫描 /Applications 和 /System/Applications 目录
+- 自动扫描 /System/Library/CoreServices 目录（包含 Finder、Dock、Siri 等系统核心应用）
 - 读取应用的 Info.plist 获取图标文件信息
 - 将 .icns 格式的图标转换为 PNG 格式
 - 导出为 512x512 像素的高质量图标
@@ -168,6 +169,65 @@ cargo run --example with_encryption
 DISCORD_APP_ID=你的应用ID
 ENCRYPTION_KEY=生成的64字符密钥
 ```
+
+---
+
+### 5. 增强版监控器 (robust_monitor.rs) ⭐ 推荐
+
+**解决长时间运行卡住问题的增强版监控程序。**
+
+**运行方式：**
+
+```bash
+cargo run --example robust_monitor
+```
+
+**核心功能：**
+
+- 💓 **心跳检测** - 每 60 秒显示运行状态
+- 🔄 **自动重连** - Discord 断线自动恢复
+- 📊 **详细统计** - 更新次数、错误次数、运行时长
+- 🛡️ **错误恢复** - 捕获错误但不中断程序
+- ⏰ **时间戳日志** - 所有操作带时间记录
+
+**为什么需要这个？**
+
+如果你遇到以下问题：
+- ❌ 程序运行一段时间后不再更新 Discord 状态
+- ❌ 程序看起来在运行但实际上卡住了
+- ❌ 没有错误提示但窗口监控停止工作
+
+使用增强版监控器可以：
+- ✅ 自动检测并恢复连接问题
+- ✅ 持续监控程序健康状态
+- ✅ 提供详细的运行日志
+- ✅ 长时间稳定运行
+
+**输出示例：**
+
+```
+╔════════════════════════════════════════════════╗
+║  Discord Activity Monitor (增强版)           ║
+║  Enhanced Robust Monitor with Auto-Recovery  ║
+╚════════════════════════════════════════════════╝
+
+🔧 Discord应用ID: 123456...
+⏱️  更新间隔: 5 秒
+💓 心跳间隔: 60 秒
+
+✅ 已连接到Discord RPC
+👀 开始监控活动窗口...
+
+🔄 [14:30:25] 窗口变化: VSCode - main.rs
+✅ Discord状态已更新（第 1 次）
+
+💓 [心跳] 运行中 | 更新: 15 次 | 错误: 0 次 | 重连: 0 次 | 距上次成功: 45 秒
+```
+
+**相关文档：**
+详细的问题分析和解决方案请查看 [docs/TROUBLESHOOTING_HANG.md](../docs/TROUBLESHOOTING_HANG.md)
+
+---
 
 ## 快速开始
 

@@ -55,10 +55,14 @@ cargo run --example export_icons_advanced -- -s 1024 -f png -o ~/Desktop/icons
 **测试环境：** macOS Sequoia 15.2
 
 **测试结果：**
-- 扫描应用：80 个
-- 成功导出：78 个
-- 失败数量：2 个
-- 成功率：97.5%
+- 扫描应用：197 个（包括系统核心应用）
+- 成功导出：124 个
+- 失败数量：73 个
+- 成功率：62.9%
+
+**重要改进：**
+- ✅ 现在包含 `/System/Library/CoreServices` 目录
+- ✅ 成功导出 Finder（访达）、Dock、Siri 等系统核心应用图标
 
 **失败原因分析：**
 少数应用未能导出是因为：
@@ -82,6 +86,11 @@ cargo run --example export_icons_advanced -- -s 1024 -f png -o ~/Desktop/icons
 - WeChat（微信）
 - 哔哩哔哩
 - Discord
+- **Finder（访达）** ⭐
+- **Dock** ⭐
+- **Spotlight** ⭐
+- **Siri** ⭐
+- **System Settings（系统设置）** ⭐
 - 等等...
 
 ## 🚀 主要技术特点

@@ -26,6 +26,7 @@ fn main() {
     let apps_dirs = vec![
         "/Applications",
         "/System/Applications",
+        "/System/Library/CoreServices",  // 包含 Finder 等系统核心应用
     ];
     
     let mut total_count = 0;
