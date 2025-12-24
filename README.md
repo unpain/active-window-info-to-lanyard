@@ -11,6 +11,7 @@
 - 🪟 **实时窗口监控** - 自动检测活动窗口变化
 - 🎯 **智能解析** - 从窗口标题中智能提取应用名称和详细信息
 - 💬 **Discord集成** - 无缝集成Discord Rich Presence
+- 🔐 **数据加密** - 可选的AES-256-GCM加密保护隐私数据
 - ⚡ **高性能** - 仅在窗口变化时更新，节省系统资源
 - 🔧 **模块化设计** - 清晰的代码架构，易于扩展和维护
 - 📦 **开箱即用** - 简单配置即可开始使用
@@ -86,16 +87,28 @@ cur-win-discord-rust/
 │   ├── lib.rs          # 库入口，导出公共API
 │   ├── main.rs         # 程序主入口
 │   ├── config.rs       # 配置管理模块
+│   ├── crypto.rs       # 加密/解密模块
 │   ├── window.rs       # Windows窗口监控模块
 │   ├── parser.rs       # 窗口标题解析模块
 │   └── discord.rs      # Discord RPC集成模块
 ├── examples/           # 示例代码
+│   ├── generate_key.rs     # 生成加密密钥工具
+│   ├── test_encryption.rs  # 加密功能测试工具
+│   ├── with_encryption.rs  # 带加密的完整示例
 │   ├── config_demo.rs      # 配置管理示例
 │   ├── parser_demo.rs      # 解析器示例
 │   └── custom_monitor.rs   # 自定义监控器示例
+├── web/                # 前端解密工具
+│   ├── decrypt.html        # 在线解密工具
+│   ├── crypto.js           # JavaScript加密模块
+│   └── README.md           # 前端使用文档
+├── docs/              # 文档目录
+│   ├── QUICKSTART.md       # 快速开始指南
+│   ├── ENCRYPTION.md       # 加密功能文档
+│   ├── ARCHITECTURE.md     # 架构文档
+│   └── config.example.txt  # 配置示例
 ├── Cargo.toml          # 项目配置
 ├── README.md           # 项目说明
-├── ARCHITECTURE.md     # 架构文档
 ├── CONTRIBUTING.md     # 贡献指南
 ├── CHANGELOG.md        # 变更日志
 └── LICENSE             # MIT许可证
@@ -132,6 +145,12 @@ fn main() {
 ### 运行示例
 
 ```bash
+# 生成加密密钥
+cargo run --example generate_key
+
+# 测试加密功能
+cargo run --example test_encryption
+
 # 配置管理示例
 cargo run --example config_demo
 
@@ -154,6 +173,38 @@ const DISCORD_APP_ID: &str = "你的应用ID";
 const UPDATE_INTERVAL: u64 = 5;
 ```
 
+### 🔐 启用数据加密（可选）
+
+为了保护你的隐私，可以启用AES-256-GCM加密来加密发送到Discord的窗口标题：
+
+1. **生成加密密钥**
+   ```bash
+   cargo run --example generate_key
+   ```
+
+2. **配置密钥**
+   
+   在项目根目录创建 `.env` 文件，添加：
+   ```env
+   DISCORD_APP_ID=你的应用ID
+   ENCRYPTION_KEY=生成的64字符密钥
+   ```
+
+3. **运行程序**
+   ```bash
+   cargo run
+   ```
+
+4. **前端解密**（可选）
+   
+   如果你需要在网页或其他前端应用中显示解密后的数据：
+   - 打开 `web/decrypt.html` 使用在线解密工具
+   - 或在你的项目中集成 `web/crypto.js` 模块
+   - 查看 `web/README.md` 获取详细说明
+
+详细的加密功能说明，请查看 [docs/ENCRYPTION.md](docs/ENCRYPTION.md)  
+前端解密方案，请查看 [web/README.md](web/README.md)
+
 ## 📚 API文档
 
 生成并查看完整的API文档：
@@ -165,6 +216,7 @@ cargo doc --open
 ### 主要模块
 
 - **`config`** - 配置管理，创建和验证应用配置
+- **`crypto`** - 加密/解密功能，提供AES-256-GCM加密
 - **`window`** - Windows API交互，获取活动窗口信息
 - **`parser`** - 窗口标题解析，提取应用名称和详细信息
 - **`discord`** - Discord RPC集成，更新Rich Presence状态
@@ -189,7 +241,7 @@ cargo test --doc
 
 当前测试覆盖：
 
-- ✅ 13个单元测试
+- ✅ 17个单元测试（包括加密功能测试）
 - ✅ 2个文档测试
 - ✅ 所有公共API都有测试
 

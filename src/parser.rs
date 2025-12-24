@@ -27,7 +27,7 @@ impl WindowInfo {
     ///
     /// # 示例
     /// ```
-    /// use cur_win_discord_rust::parser::WindowInfo;
+    /// use active_window_info_to_lanyard_lib::parser::WindowInfo;
     ///
     /// let info = WindowInfo::parse("document.txt - Notepad");
     /// assert_eq!(info.app_name, "Notepad");
@@ -50,7 +50,7 @@ impl WindowInfo {
 ///
 /// # 示例
 /// ```
-/// use cur_win_discord_rust::parser::extract_app_name;
+/// use active_window_info_to_lanyard_lib::parser::extract_app_name;
 ///
 /// let info = extract_app_name("README.md - Visual Studio Code");
 /// assert_eq!(info.app_name, "Visual Studio Code");

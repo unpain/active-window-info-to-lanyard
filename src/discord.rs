@@ -5,12 +5,14 @@ use discord_rpc_client::Client as DiscordClient;
 use std::time::{ SystemTime, UNIX_EPOCH };
 
 use crate::config::Config;
+use crate::crypto::CryptoManager;
 use crate::parser::WindowInfo;
 
 /// Discord RPC管理器
 pub struct DiscordManager {
     client: DiscordClient,
     start_time: u64,
+    crypto: Option<CryptoManager>,
 }
 
 impl DiscordManager {
@@ -32,7 +34,21 @@ impl DiscordManager {
             .map_err(|e| format!("获取系统时间失败: {}", e))?
             .as_secs();
 
-        Ok(Self { client, start_time })
+        // 如果配置中有加密密钥，初始化加密管理器
+        let crypto = if let Some(ref key) = config.encryption_key {
+            Some(
+                CryptoManager::from_hex(key)
+                    .map_err(|e| format!("初始化加密管理器失败: {}", e))?
+            )
+        } else {
+            None
+        };
+
+        Ok(Self {
+            client,
+            start_time,
+            crypto,
+        })
     }
 
     /// 更新Discord Rich Presence状态
@@ -49,10 +65,19 @@ impl DiscordManager {
         window_info: &WindowInfo,
         full_title: &str
     ) -> Result<(), String> {
+        // 如果启用了加密，加密state数据
+        let state_data = if let Some(ref crypto) = self.crypto {
+            crypto
+                .encrypt(full_title)
+                .map_err(|e| format!("加密state数据失败: {}", e))?
+        } else {
+            full_title.to_string()
+        };
+
         self.client
             .set_activity(|act| {
                 let mut activity = act
-                    .state(full_title)
+                    .state(&state_data)
                     .details(&window_info.app_name)
                     .timestamps(|t| t.start(self.start_time));
 
@@ -78,6 +103,29 @@ impl DiscordManager {
     /// 获取启动时间戳
     pub fn start_time(&self) -> u64 {
         self.start_time
+    }
+
+    /// 检查是否启用了加密
+    pub fn is_encryption_enabled(&self) -> bool {
+        self.crypto.is_some()
+    }
+
+    /// 解密state数据（用于调试或日志记录）
+    ///
+    /// # 参数
+    /// * `encrypted_data` - 加密的数据
+    ///
+    /// # 返回值
+    /// * `Ok(String)` - 解密后的数据
+    /// * `Err(String)` - 解密失败或未启用加密
+    pub fn decrypt_state(&self, encrypted_data: &str) -> Result<String, String> {
+        if let Some(ref crypto) = self.crypto {
+            crypto
+                .decrypt(encrypted_data)
+                .map_err(|e| format!("解密state数据失败: {}", e))
+        } else {
+            Err("加密未启用".to_string())
+        }
     }
 }
 

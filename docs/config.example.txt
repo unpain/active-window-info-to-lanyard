@@ -5,6 +5,12 @@
 # 在 https://discord.com/developers/applications 获取
 DISCORD_APP_ID=YOUR_DISCORD_APP_ID
 
+# 加密密钥（可选，64个十六进制字符）
+# 如果设置此项，窗口标题将被加密后再发送到Discord
+# 生成方式: openssl rand -hex 32
+# 或使用程序生成: cargo run --example generate_key
+# ENCRYPTION_KEY=a1b2c3d4e5f6789012345678901234567890abcdefabcdefabcdefabcdef1234
+
 # 更新间隔（秒）
 UPDATE_INTERVAL=5
 

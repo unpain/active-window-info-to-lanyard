@@ -9,6 +9,8 @@ pub struct Config {
     pub discord_app_id: u64,
     /// 状态更新间隔
     pub update_interval: Duration,
+    /// 加密密钥（可选，32字节十六进制字符串）
+    pub encryption_key: Option<String>,
 }
 
 impl Config {
@@ -21,6 +23,25 @@ impl Config {
         Self {
             discord_app_id,
             update_interval: Duration::from_secs(update_interval_secs),
+            encryption_key: None,
+        }
+    }
+
+    /// 创建带加密的配置实例
+    ///
+    /// # 参数
+    /// * `discord_app_id` - Discord应用ID
+    /// * `update_interval_secs` - 更新间隔（秒）
+    /// * `encryption_key` - 64字符的十六进制加密密钥
+    pub fn new_with_encryption(
+        discord_app_id: u64,
+        update_interval_secs: u64,
+        encryption_key: String,
+    ) -> Self {
+        Self {
+            discord_app_id,
+            update_interval: Duration::from_secs(update_interval_secs),
+            encryption_key: Some(encryption_key),
         }
     }
 
@@ -50,7 +71,22 @@ impl Config {
             return Err("更新间隔不能小于1秒".to_string());
         }
 
+        // 验证加密密钥格式（如果提供）
+        if let Some(ref key) = self.encryption_key {
+            if key.len() != 64 {
+                return Err("加密密钥必须是64个十六进制字符（32字节）".to_string());
+            }
+            if !key.chars().all(|c| c.is_ascii_hexdigit()) {
+                return Err("加密密钥必须只包含十六进制字符（0-9, a-f, A-F）".to_string());
+            }
+        }
+
         Ok(())
+    }
+
+    /// 检查是否启用了加密
+    pub fn is_encryption_enabled(&self) -> bool {
+        self.encryption_key.is_some()
     }
 }
 

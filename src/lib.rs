@@ -7,13 +7,16 @@
 /// * `window` - Windows窗口监控
 /// * `parser` - 窗口标题解析
 /// * `discord` - Discord RPC集成
+/// * `crypto` - 加密/解密功能
 pub mod config;
+pub mod crypto;
 pub mod discord;
 pub mod parser;
 pub mod window;
 
 // 重新导出常用类型，方便使用
 pub use config::Config;
+pub use crypto::{CryptoError, CryptoManager};
 pub use discord::{DiscordManager, UpdateResult};
 pub use parser::{extract_app_name, sanitize_title, WindowInfo};
 pub use window::{get_active_window_title, WindowMonitor};
