@@ -92,21 +92,24 @@ cur-win-discord-rust/
 │   ├── parser.rs       # 窗口标题解析模块
 │   └── discord.rs      # Discord RPC集成模块
 ├── examples/           # 示例代码
-│   ├── generate_key.rs     # 生成加密密钥工具
-│   ├── test_encryption.rs  # 加密功能测试工具
-│   ├── with_encryption.rs  # 带加密的完整示例
-│   ├── config_demo.rs      # 配置管理示例
-│   ├── parser_demo.rs      # 解析器示例
-│   └── custom_monitor.rs   # 自定义监控器示例
+│   ├── export_icons.rs         # 批量导出应用图标工具 (macOS)
+│   ├── export_icons_advanced.rs # 高级图标导出工具 (macOS)
+│   ├── generate_key.rs         # 生成加密密钥工具
+│   ├── test_encryption.rs      # 加密功能测试工具
+│   ├── with_encryption.rs      # 带加密的完整示例
+│   ├── config_demo.rs          # 配置管理示例
+│   ├── parser_demo.rs          # 解析器示例
+│   └── custom_monitor.rs       # 自定义监控器示例
 ├── web/                # 前端解密工具
 │   ├── decrypt.html        # 在线解密工具
 │   ├── crypto.js           # JavaScript加密模块
 │   └── README.md           # 前端使用文档
 ├── docs/              # 文档目录
-│   ├── QUICKSTART.md       # 快速开始指南
-│   ├── ENCRYPTION.md       # 加密功能文档
-│   ├── ARCHITECTURE.md     # 架构文档
-│   └── config.example.txt  # 配置示例
+│   ├── QUICKSTART.md           # 快速开始指南
+│   ├── ICON_EXPORT_GUIDE.md    # 图标导出指南 (macOS)
+│   ├── ENCRYPTION.md           # 加密功能文档
+│   ├── ARCHITECTURE.md         # 架构文档
+│   └── config.example.txt      # 配置示例
 ├── Cargo.toml          # 项目配置
 ├── README.md           # 项目说明
 ├── CONTRIBUTING.md     # 贡献指南
@@ -204,6 +207,41 @@ const UPDATE_INTERVAL: u64 = 5;
 
 详细的加密功能说明，请查看 [docs/ENCRYPTION.md](docs/ENCRYPTION.md)  
 前端解密方案，请查看 [web/README.md](web/README.md)
+
+## 🎨 批量导出应用图标 (macOS)
+
+如果你需要批量导出 macOS 系统中所有应用的图标，可以使用我们提供的便捷工具：
+
+### 基础版本
+```bash
+cargo run --example export_icons
+```
+
+这将自动扫描 `/Applications` 和 `/System/Applications` 目录，将所有应用图标导出为 512x512 像素的 PNG 格式。
+
+### 高级版本（支持自定义选项）
+```bash
+# 导出为 1024x1024 的高清图标
+cargo run --example export_icons_advanced -- -s 1024
+
+# 导出为 JPEG 格式
+cargo run --example export_icons_advanced -- -f jpeg
+
+# 自定义输出目录
+cargo run --example export_icons_advanced -- -o ~/Desktop/icons
+
+# 查看所有选项
+cargo run --example export_icons_advanced -- --help
+```
+
+**功能特点：**
+- 🎨 支持自定义图标尺寸（任意像素值）
+- 📁 支持自定义输出目录
+- 🖼️  支持多种格式（PNG、JPEG、TIFF）
+- ⚡ 并行处理，快速导出
+- 📊 详细的统计信息和错误报告
+
+详细的使用说明，请查看 [docs/ICON_EXPORT_GUIDE.md](docs/ICON_EXPORT_GUIDE.md)
 
 ## 📚 API文档
 

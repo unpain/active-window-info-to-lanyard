@@ -17,6 +17,9 @@ Cargo.lock
 config.txt
 *.local
 
+# 导出的图标
+exported_icons/
+
 # 日志文件
 *.log
 
