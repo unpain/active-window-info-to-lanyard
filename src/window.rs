@@ -6,6 +6,9 @@
 // 忽略 objc 宏的 clippy 警告
 #![allow(unexpected_cfgs)]
 
+use std::sync::Mutex;
+use std::time::{Duration, Instant};
+
 #[cfg(windows)]
 use windows::{
     Win32::Foundation::HWND,
@@ -26,6 +29,17 @@ use core_foundation::{
 };
 #[cfg(target_os = "macos")]
 use core_graphics::window::{kCGWindowListOptionOnScreenOnly, kCGNullWindowID};
+#[cfg(target_os = "macos")]
+use std::sync::LazyLock;
+
+/// macOS 窗口查询互斥锁
+/// 用于防止快速切换窗口时的并发访问问题
+#[cfg(target_os = "macos")]
+static WINDOW_QUERY_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
+
+/// macOS 窗口查询超时时间（毫秒）
+#[cfg(target_os = "macos")]
+const WINDOW_QUERY_TIMEOUT_MS: u64 = 100;
 
 /// 获取当前活动窗口的标题 (Windows版本)
 ///
@@ -96,9 +110,32 @@ pub fn get_active_window_title() -> Option<String> {
 /// 这种方法比使用 NSWorkspace 更可靠，能够实时检测窗口变化
 /// 
 /// # 性能优化
-/// 使用 autorelease pool 确保内存及时释放，防止长时间运行后内存泄漏
+/// 1. 使用互斥锁防止快速切换窗口时的并发访问问题
+/// 2. 使用 autorelease pool 确保内存及时释放，防止长时间运行后内存泄漏
+/// 3. 超时机制避免长时间阻塞
 #[cfg(target_os = "macos")]
 pub fn get_active_window_title() -> Option<String> {
+    // 尝试获取锁，使用超时机制避免死锁
+    let start = Instant::now();
+    let lock_result = loop {
+        if let Ok(guard) = WINDOW_QUERY_LOCK.try_lock() {
+            break Some(guard);
+        }
+        
+        // 检查是否超时
+        if start.elapsed() > Duration::from_millis(WINDOW_QUERY_TIMEOUT_MS) {
+            #[cfg(debug_assertions)]
+            eprintln!("[警告] 获取窗口查询锁超时，跳过此次查询");
+            break None;
+        }
+        
+        // 短暂休眠后重试
+        std::thread::sleep(Duration::from_millis(1));
+    };
+    
+    // 如果无法获取锁，返回 None
+    let _guard = lock_result?;
+    
     unsafe {
         // 创建 autorelease pool，确保在函数结束时释放所有自动释放的对象
         let pool = NSAutoreleasePool::new(nil);
@@ -216,6 +253,10 @@ pub fn get_active_window_title() -> Option<String> {
 /// 封装窗口监控逻辑，跟踪窗口标题变化
 pub struct WindowMonitor {
     last_window_title: String,
+    /// 上次成功查询的时间（用于避免过于频繁的查询）
+    last_query_time: Option<Instant>,
+    /// 最小查询间隔（毫秒）
+    min_query_interval_ms: u64,
 }
 
 impl WindowMonitor {
@@ -223,6 +264,20 @@ impl WindowMonitor {
     pub fn new() -> Self {
         Self {
             last_window_title: String::new(),
+            last_query_time: None,
+            min_query_interval_ms: 50, // 默认最小50ms间隔
+        }
+    }
+    
+    /// 创建新的窗口监控器实例，并指定最小查询间隔
+    ///
+    /// # 参数
+    /// * `min_query_interval_ms` - 最小查询间隔（毫秒），避免过于频繁查询
+    pub fn new_with_interval(min_query_interval_ms: u64) -> Self {
+        Self {
+            last_window_title: String::new(),
+            last_query_time: None,
+            min_query_interval_ms,
         }
     }
 
@@ -233,9 +288,29 @@ impl WindowMonitor {
     /// * `None` - 窗口标题未变化或无法获取
     ///
     /// # 改进说明
-    /// 每次都获取当前窗口标题，即使长时间未切换也能正确检测到后续的窗口变化
-    /// 添加详细的调试信息，帮助诊断长时间运行后的问题
+    /// 1. 每次都获取当前窗口标题，即使长时间未切换也能正确检测到后续的窗口变化
+    /// 2. 添加详细的调试信息，帮助诊断长时间运行后的问题
+    /// 3. 添加查询间隔限制，避免过于频繁查询导致性能问题
     pub fn check_for_change(&mut self) -> Option<String> {
+        // 检查是否满足最小查询间隔
+        if let Some(last_time) = self.last_query_time {
+            let elapsed = last_time.elapsed();
+            if elapsed < Duration::from_millis(self.min_query_interval_ms) {
+                // 还没到查询时间，跳过此次查询
+                #[cfg(debug_assertions)]
+                {
+                    let remaining = self.min_query_interval_ms - elapsed.as_millis() as u64;
+                    if remaining > 10 {
+                        println!("[调试] 查询间隔限制，剩余 {}ms", remaining);
+                    }
+                }
+                return None;
+            }
+        }
+        
+        // 更新查询时间
+        self.last_query_time = Some(Instant::now());
+        
         // 每次都尝试获取当前活动窗口标题
         let current_title = get_active_window_title();
         
@@ -278,6 +353,17 @@ impl WindowMonitor {
     /// 重置监控状态
     pub fn reset(&mut self) {
         self.last_window_title.clear();
+        self.last_query_time = None;
+    }
+    
+    /// 设置最小查询间隔（毫秒）
+    pub fn set_min_query_interval(&mut self, interval_ms: u64) {
+        self.min_query_interval_ms = interval_ms;
+    }
+    
+    /// 获取最小查询间隔（毫秒）
+    pub fn min_query_interval(&self) -> u64 {
+        self.min_query_interval_ms
     }
 }
 

@@ -378,6 +378,21 @@ Discord Rich Presence显示
 - Windows: 某些以管理员权限运行的窗口无法被普通权限程序读取，尝试以管理员权限运行本程序
 - macOS: 首次运行时需要在"系统设置 → 隐私与安全性 → 辅助功能"中授予权限
 
+### macOS 快速切换窗口时卡住
+
+如果在 macOS 上快速切换窗口时程序卡住或无响应：
+
+1. **问题原因**：Core Graphics API 并发访问冲突
+2. **已优化**：v0.1.0 版本已添加互斥锁和查询间隔限制
+3. **测试验证**：运行 `cargo run --example test_rapid_switch` 验证优化效果
+4. **详细说明**：查看 [docs/MACOS_RAPID_SWITCH_OPTIMIZATION.md](docs/MACOS_RAPID_SWITCH_OPTIMIZATION.md)
+
+**优化措施：**
+- ✅ 全局互斥锁防止并发访问
+- ✅ 100ms 超时机制避免死锁
+- ✅ 最小 50ms 查询间隔限制
+- ✅ 内存自动释放机制
+
 ## 📄 许可证
 
 本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
