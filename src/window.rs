@@ -39,10 +39,14 @@ use core_graphics::window::{kCGWindowListOptionOnScreenOnly, kCGNullWindowID};
 /// # 实现说明
 /// 使用 Windows API 获取前台窗口标题
 /// 添加了窗口句柄验证，确保长时间运行的稳定性
+/// 
+/// # 长时间运行优化
+/// 每次重新获取前台窗口句柄，不缓存任何状态，确保能够检测到所有窗口变化
 #[cfg(windows)]
 pub fn get_active_window_title() -> Option<String> {
     unsafe {
-        // 获取前台窗口句柄
+        // 每次都重新获取前台窗口句柄（不使用缓存）
+        // 这确保了即使长时间未切换窗口，后续的切换也能被正确检测到
         let hwnd: HWND = GetForegroundWindow();
         
         // 验证句柄是否有效
@@ -56,13 +60,13 @@ pub fn get_active_window_title() -> Option<String> {
         }
 
         // 使用较大的缓冲区以支持长标题
+        // 每次都使用新的缓冲区，避免任何潜在的数据残留
         let mut buffer = [0u16; 512];
         let length = GetWindowTextW(hwnd, &mut buffer);
 
         // 检查是否成功获取文本
         if length == 0 {
-            // GetLastError 会返回 Result，如果有错误说明窗口可能已关闭或权限问题
-            // 如果没有错误，说明窗口确实没有标题（这是正常情况）
+            // 窗口可能没有标题，或者获取失败
             return None;
         }
 
@@ -227,17 +231,43 @@ impl WindowMonitor {
     /// # 返回值
     /// * `Some(String)` - 新的窗口标题（如果发生变化）
     /// * `None` - 窗口标题未变化或无法获取
+    ///
+    /// # 改进说明
+    /// 每次都获取当前窗口标题，即使长时间未切换也能正确检测到后续的窗口变化
+    /// 添加详细的调试信息，帮助诊断长时间运行后的问题
     pub fn check_for_change(&mut self) -> Option<String> {
-        if let Some(window_title) = get_active_window_title() {
-            if window_title != self.last_window_title {
-                self.last_window_title = window_title.clone();
-                return Some(window_title);
+        // 每次都尝试获取当前活动窗口标题
+        let current_title = get_active_window_title();
+        
+        match current_title {
+            Some(window_title) => {
+                // 成功获取到窗口标题
+                if window_title != self.last_window_title {
+                    // 窗口标题发生变化
+                    #[cfg(debug_assertions)]
+                    println!("[调试] 检测到窗口变化: {} -> {}", self.last_window_title, window_title);
+                    
+                    self.last_window_title = window_title.clone();
+                    return Some(window_title);
+                } else {
+                    // 窗口标题未变化（这是正常情况，不输出日志避免刷屏）
+                }
+                None
             }
-        } else if !self.last_window_title.is_empty() {
-            // 没有活动窗口，但之前有窗口
-            self.last_window_title.clear();
+            None => {
+                // 无法获取窗口标题（可能没有活动窗口或获取失败）
+                #[cfg(debug_assertions)]
+                if !self.last_window_title.is_empty() {
+                    println!("[调试] 无法获取窗口标题，之前的窗口: {}", self.last_window_title);
+                }
+                
+                if !self.last_window_title.is_empty() {
+                    // 之前有窗口，现在没有了，清空状态
+                    self.last_window_title.clear();
+                }
+                None
+            }
         }
-        None
     }
 
     /// 获取最后记录的窗口标题

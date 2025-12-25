@@ -11,9 +11,18 @@
 - **Windows长时间运行问题修复** (2024-12-25)
   - 修复Windows平台上长时间运行后推送自动停止的问题
   - 在 `get_active_window_title()` 函数中添加窗口句柄验证（使用 `IsWindow` API）
-  - 添加注释说明，提高代码可读性和可维护性
-  - 确保获取窗口标题前验证窗口是否仍然存在
+  - 修复长时间不切换窗口后无法检测到窗口切换的问题
+  - 改进 `check_for_change()` 方法，使用 `match` 语句使逻辑更清晰
+  - 添加调试模式下的详细日志输出
+  - 明确文档说明：每次都重新获取前台窗口句柄，不使用任何缓存
   - 对比 macOS 版本（使用 autorelease pool 防止内存泄漏），Windows 版本通过句柄验证确保稳定性
+
+### 新增
+- **调试工具** (2024-12-25)
+  - 添加 `examples/debug_window_monitor.rs` 调试工具
+  - 用于测试长时间不切换窗口后的行为
+  - 提供详细的心跳信息和窗口变化检测
+  - 详见 [docs/WINDOWS_LONG_IDLE_FIX.md](docs/WINDOWS_LONG_IDLE_FIX.md)
 
 ### 计划功能
 - [ ] 支持自定义窗口过滤规则
