@@ -12,11 +12,7 @@ use crate::parser::WindowInfo;
 pub struct DiscordManager {
     client: DiscordClient,
     start_time: u64,
-    current_activity_start: u64,
     crypto: Option<CryptoManager>,
-    discord_app_id: u64,
-    last_successful_update: u64,
-    consecutive_failures: u32,
 }
 
 impl DiscordManager {
@@ -51,62 +47,8 @@ impl DiscordManager {
         Ok(Self {
             client,
             start_time,
-            current_activity_start: start_time,
             crypto,
-            discord_app_id: config.discord_app_id,
-            last_successful_update: start_time,
-            consecutive_failures: 0,
         })
-    }
-
-    /// 尝试重新连接到Discord RPC
-    ///
-    /// # 返回值
-    /// * `Ok(())` - 重连成功
-    /// * `Err(String)` - 重连失败
-    fn reconnect(&mut self) -> Result<(), String> {
-        println!("🔄 尝试重新连接Discord RPC...");
-        
-        // 创建新的客户端实例
-        let mut new_client = DiscordClient::new(self.discord_app_id);
-        new_client.start();
-        
-        // 替换旧的客户端
-        self.client = new_client;
-        
-        // 重置失败计数
-        self.consecutive_failures = 0;
-        
-        // 更新最后成功时间
-        self.last_successful_update = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map_err(|e| format!("获取系统时间失败: {}", e))?
-            .as_secs();
-        
-        println!("✅ Discord RPC重新连接成功");
-        Ok(())
-    }
-
-    /// 检查连接健康状态并在需要时重连
-    ///
-    /// # 返回值
-    /// * `Ok(())` - 连接健康或重连成功
-    /// * `Err(String)` - 重连失败
-    fn check_connection_health(&mut self) -> Result<(), String> {
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map_err(|e| format!("获取系统时间失败: {}", e))?
-            .as_secs();
-        
-        // 如果连续失败次数超过3次，或者距离上次成功更新超过5分钟，尝试重连
-        let time_since_last_success = now - self.last_successful_update;
-        if self.consecutive_failures >= 3 || time_since_last_success > 300 {
-            println!("⚠️  检测到连接异常 (连续失败: {}, 距上次成功: {}秒)", 
-                     self.consecutive_failures, time_since_last_success);
-            self.reconnect()?;
-        }
-        
-        Ok(())
     }
 
     /// 更新Discord Rich Presence状态
@@ -123,18 +65,6 @@ impl DiscordManager {
         window_info: &WindowInfo,
         full_title: &str
     ) -> Result<(), String> {
-        // 检查连接健康状态
-        if let Err(e) = self.check_connection_health() {
-            eprintln!("⚠️  连接健康检查失败: {}", e);
-            // 即使健康检查失败，也尝试继续更新
-        }
-        
-        // 更新当前活动的开始时间为当前时间
-        self.current_activity_start = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map_err(|e| format!("获取系统时间失败: {}", e))?
-            .as_secs();
-        
         // 如果启用了加密，加密state数据
         let state_data = if let Some(ref crypto) = self.crypto {
             crypto
@@ -144,12 +74,12 @@ impl DiscordManager {
             full_title.to_string()
         };
 
-        let result = self.client
+        self.client
             .set_activity(|act| {
                 let mut activity = act
                     .state(&state_data)
                     .details(&window_info.app_name)
-                    .timestamps(|t| t.start(self.current_activity_start));
+                    .timestamps(|t| t.start(self.start_time));
 
                 // 添加Windows图标（需要在Discord Developer Portal上传）
                 activity = activity.assets(|a| {
@@ -159,24 +89,7 @@ impl DiscordManager {
                 activity
             })
             .map(|_| ())
-            .map_err(|e| format!("更新Discord状态失败: {}", e));
-        
-        // 根据结果更新状态跟踪
-        match result {
-            Ok(_) => {
-                self.consecutive_failures = 0;
-                self.last_successful_update = SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap_or_default()
-                    .as_secs();
-                Ok(())
-            }
-            Err(e) => {
-                self.consecutive_failures += 1;
-                println!("⚠️  更新失败 (连续失败次数: {})", self.consecutive_failures);
-                Err(e)
-            }
-        }
+            .map_err(|e| format!("更新Discord状态失败: {}", e))
     }
 
     /// 清除Discord Rich Presence状态
@@ -190,11 +103,6 @@ impl DiscordManager {
     /// 获取启动时间戳
     pub fn start_time(&self) -> u64 {
         self.start_time
-    }
-    
-    /// 获取当前活动的开始时间戳
-    pub fn current_activity_start(&self) -> u64 {
-        self.current_activity_start
     }
 
     /// 检查是否启用了加密
