@@ -3,7 +3,7 @@ use active_window_info_to_lanyard_lib::{ Config, DiscordManager, WindowInfo, Win
 ///
 /// 监控活动窗口并将其同步到Discord Rich Presence
 /// 支持 Windows 和 macOS 平台
-use std::{ fs::File, io::Read, thread };
+use std::{ fs::File, io::Read, thread, time::Duration };
 
 // 更新间隔（秒）
 const UPDATE_INTERVAL: u64 = 5;
@@ -78,9 +78,26 @@ fn main() {
             let window_info = WindowInfo::parse(&window_title);
 
             // 更新Discord状态
-            match discord.update_activity(&window_info, &window_title) {
-                Ok(_) => println!("✅ Discord状态已更新"),
-                Err(e) => eprintln!("⚠️  更新Discord失败: {}", e),
+            let mut attempts = 0;
+            let mut updated = false;
+            while attempts < 3 && !updated {
+                attempts += 1;
+                match discord.update_activity(&window_info, &window_title) {
+                    Ok(_) => {
+                        println!("✅ Discord状态已更新 (尝试 {} 次)", attempts);
+                        updated = true;
+                    }
+                    Err(e) => {
+                        eprintln!("⚠️  更新Discord失败 (第 {} 次尝试): {}", attempts, e);
+                        if attempts >= 3 {
+                            // 回滚窗口记录，下一轮循环会再次检测到变化并重试
+                            window_monitor.revert_last_change();
+                        } else {
+                            // 短暂等待后重试
+                            thread::sleep(Duration::from_millis(300));
+                        }
+                    }
+                }
             }
         }
 

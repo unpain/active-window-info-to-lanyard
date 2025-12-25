@@ -253,6 +253,8 @@ pub fn get_active_window_title() -> Option<String> {
 /// 封装窗口监控逻辑，跟踪窗口标题变化
 pub struct WindowMonitor {
     last_window_title: String,
+    /// 上一次窗口标题（用于失败时回滚）
+    previous_window_title: String,
     /// 上次成功查询的时间（用于避免过于频繁的查询）
     last_query_time: Option<Instant>,
     /// 最小查询间隔（毫秒）
@@ -264,6 +266,7 @@ impl WindowMonitor {
     pub fn new() -> Self {
         Self {
             last_window_title: String::new(),
+            previous_window_title: String::new(),
             last_query_time: None,
             min_query_interval_ms: 50, // 默认最小50ms间隔
         }
@@ -276,6 +279,7 @@ impl WindowMonitor {
     pub fn new_with_interval(min_query_interval_ms: u64) -> Self {
         Self {
             last_window_title: String::new(),
+            previous_window_title: String::new(),
             last_query_time: None,
             min_query_interval_ms,
         }
@@ -322,6 +326,8 @@ impl WindowMonitor {
                     #[cfg(debug_assertions)]
                     println!("[调试] 检测到窗口变化: {} -> {}", self.last_window_title, window_title);
                     
+                    // 记录上一次标题，失败时可回滚
+                    self.previous_window_title = self.last_window_title.clone();
                     self.last_window_title = window_title.clone();
                     return Some(window_title);
                 } else {
@@ -353,6 +359,7 @@ impl WindowMonitor {
     /// 重置监控状态
     pub fn reset(&mut self) {
         self.last_window_title.clear();
+        self.previous_window_title.clear();
         self.last_query_time = None;
     }
     
@@ -364,6 +371,13 @@ impl WindowMonitor {
     /// 获取最小查询间隔（毫秒）
     pub fn min_query_interval(&self) -> u64 {
         self.min_query_interval_ms
+    }
+
+    /// 当外部处理失败时回滚到上一个窗口标题，方便下一轮重试
+    pub fn revert_last_change(&mut self) {
+        if !self.previous_window_title.is_empty() {
+            self.last_window_title = self.previous_window_title.clone();
+        }
     }
 }
 
