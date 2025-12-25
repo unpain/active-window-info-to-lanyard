@@ -9,7 +9,7 @@
 #[cfg(windows)]
 use windows::{
     Win32::Foundation::HWND,
-    Win32::UI::WindowsAndMessaging::{GetForegroundWindow, GetWindowTextW},
+    Win32::UI::WindowsAndMessaging::{GetForegroundWindow, GetWindowTextW, IsWindow},
 };
 
 #[cfg(target_os = "macos")]
@@ -35,22 +35,41 @@ use core_graphics::window::{kCGWindowListOptionOnScreenOnly, kCGNullWindowID};
 ///
 /// # 平台支持
 /// 仅支持Windows平台
+///
+/// # 实现说明
+/// 使用 Windows API 获取前台窗口标题
+/// 添加了窗口句柄验证，确保长时间运行的稳定性
 #[cfg(windows)]
 pub fn get_active_window_title() -> Option<String> {
     unsafe {
+        // 获取前台窗口句柄
         let hwnd: HWND = GetForegroundWindow();
+        
+        // 验证句柄是否有效
         if hwnd.0 == 0 {
             return None;
         }
-
-        let mut buffer = [0u16; 512];
-        let length = GetWindowTextW(hwnd, &mut buffer);
-
-        if length == 0 {
+        
+        // 验证窗口是否仍然存在（长时间运行时可能窗口已关闭）
+        if !IsWindow(hwnd).as_bool() {
             return None;
         }
 
+        // 使用较大的缓冲区以支持长标题
+        let mut buffer = [0u16; 512];
+        let length = GetWindowTextW(hwnd, &mut buffer);
+
+        // 检查是否成功获取文本
+        if length == 0 {
+            // GetLastError 会返回 Result，如果有错误说明窗口可能已关闭或权限问题
+            // 如果没有错误，说明窗口确实没有标题（这是正常情况）
+            return None;
+        }
+
+        // 转换为 Rust 字符串
         let title = String::from_utf16_lossy(&buffer[0..length as usize]);
+        
+        // 确保标题不为空
         if title.is_empty() {
             None
         } else {
